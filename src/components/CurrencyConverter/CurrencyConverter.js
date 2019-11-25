@@ -15,6 +15,7 @@ class CurrencyConverter extends Component {
 
   state = {
     currencies: [],
+    curCombination: {},
     fromCurrency: "EUR",
     toCurrency: "INR",
     amount: 0,
@@ -51,19 +52,33 @@ class CurrencyConverter extends Component {
         this.setState({ amount: event.target.value })
     }
 
-    if (this.state.fromCurrency !== this.state.toCurrency) {
-      axios
-          .get(`/latest?symbols=${this.state.toCurrency}&base=${this.state.fromCurrency}`)
-          .then(response => {
-              const result = this.state.amount * (response.data.rates[this.state.toCurrency]);
-              this.setState({ result: result })
-          })
-          .catch(err => {
-              console.log("Server Error", err.message);
-        });
-      } else {
-          this.setState({ result: "Source and Target Currency should not be same!" })
-      }
+
+    if(typeof this.state.curCombination[this.state.fromCurrency] != 'undefined' &&
+      typeof this.state.curCombination[this.state.fromCurrency][this.state.toCurrency] != 'undefined'){
+      const result = this.state.amount * (this.state.curCombination[this.state.fromCurrency][this.state.toCurrency][this.state.toCurrency]);
+      this.setState({ result: result })
+    } else {
+      if (this.state.fromCurrency !== this.state.toCurrency) {
+        axios
+            .get(`/latest?symbols=${this.state.toCurrency}&base=${this.state.fromCurrency}`)
+            .then(response => {
+                let curCombination = {};
+                curCombination[this.state.fromCurrency][this.state.toCurrency] = response.data.rates;
+                const result = this.state.amount * (response.data.rates[this.state.toCurrency]);
+                console.log(result);
+                this.setState({ result: result, curCombination: curCombination })
+            })
+            .catch(err => {
+                console.log("Server Error", err.message);
+          });
+        } else {
+            this.setState({ result: "Source and Target Currency should not be same!" })
+        }
+    }
+
+
+
+
     };
 
   render(){
@@ -126,3 +141,4 @@ class CurrencyConverter extends Component {
   }
 }
 export default CurrencyConverter;
+
